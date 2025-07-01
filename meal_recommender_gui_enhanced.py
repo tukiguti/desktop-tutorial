@@ -5,18 +5,18 @@ import tkinter as tk
 from tkinter import ttk, messagebox, font, filedialog
 import json
 import os
-import requests
+# import requests  # オンライン機能を無効化
 import threading
 import time
 import datetime
-from PIL import Image, ImageTk
-import matplotlib
-matplotlib.use("TkAgg")
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+# from PIL import Image, ImageTk  # 使用していないため無効化
+# import matplotlib  # 栄養可視化機能を無効化
+# matplotlib.use("TkAgg")
+# from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 # 新機能のインポート
 from weekly_meal_planner import generate_weekly_meal_plan, get_nutrition_summary
-from nutrition_visualizer import NutritionVisualizer, create_weekly_nutrition_chart
+# from nutrition_visualizer import NutritionVisualizer, create_weekly_nutrition_chart  # matplotlib依存のため無効化
 from user_reports import UserReportManager, UserReportViewer
 from user_preferences import UserPreferences
 from ingredient_inventory import IngredientInventory
@@ -176,42 +176,9 @@ def search_online_recipes(query, limit=5):
             "hits": limit
         }
         
-        # APIリクエストを送信
-        try:
-            response = requests.get("https://app.rakuten.co.jp/services/api/Recipe/CategoryRanking/20170426", params=params)
-            data = response.json()
-            
-            # APIレスポンスをレシピ形式に変換
-            online_recipes = []
-            for item in data["result"]:
-                recipe = {
-                    "id": item["recipeId"],
-                    "name": item["recipeTitle"],
-                    "ingredients": item["recipeMaterial"],
-                    "steps": [f"1. {item['recipeDescription']}",
-                              f"2. 調理時間: {item['recipeIndication']}",
-                              f"3. 予算: {item['recipeCost']}"],
-                    "tags_mood": [query],
-                    "tags_condition": [query],
-                    "comment": item["recipeDescription"],
-                    "source": "オンラインレシピ",
-                    "nutrition": {
-                        "calories": random.randint(200, 500),
-                        "protein": random.randint(10, 30),
-                        "fat": random.randint(5, 25),
-                        "carbs": random.randint(10, 50),
-                        "vitamins": ["ビタミンA", "ビタミンC"],
-                        "minerals": ["カルシウム", "鉄分"]
-                    }
-                }
-                online_recipes.append(recipe)
-            
-            return online_recipes
-            
-        except requests.exceptions.RequestException as req_err:
-            print(f"APIリクエスト中にエラーが発生しました: {req_err}")
-            # APIリクエストが失敗した場合はダミーデータを返す
-            return generate_dummy_recipes(query, limit)
+        # オンライン機能は無効化 - ダミーデータを返す
+        print("オンライン機能は無効化されています。ダミーデータを使用します。")
+        return generate_dummy_recipes(query, limit)
     
     except Exception as e:
         print(f"オンラインレシピの検索中にエラーが発生しました: {e}")
@@ -429,10 +396,19 @@ class MealRecommenderApp:
         self.style.configure("TLabelframe", background=self.base_bg_color)
         self.style.configure("TLabelframe.Label", font=self.header_font, background=self.base_bg_color, foreground=self.text_color)
         self.style.configure("TLabel", background=self.base_bg_color, foreground=self.text_color)
-        self.style.configure("TButton", font=self.normal_font, background=self.accent_color, foreground="#ffffff")
+        # ボタンスタイルの設定（macOS対応）
+        self.style.configure("TButton", 
+            font=self.normal_font, 
+            background=self.accent_color, 
+            foreground="#ffffff",
+            borderwidth=1,
+            focuscolor="none",
+            relief="solid"
+        )
         self.style.map("TButton",
-            background=[("active", self.current_theme["accent"]), ("disabled", "#bdc3c7")],
-            foreground=[("active", "#ffffff"), ("disabled", "#95a5a6")]
+            background=[("active", self.current_theme["accent"]), ("pressed", "#2980b9"), ("disabled", "#bdc3c7"), ("!disabled", self.accent_color)],
+            foreground=[("active", "#ffffff"), ("pressed", "#ffffff"), ("disabled", "#95a5a6"), ("!disabled", "#ffffff")],
+            relief=[("active", "solid"), ("pressed", "sunken"), ("!disabled", "solid")]
         )
         self.style.configure("Header.TLabel", font=self.header_font, background=self.base_bg_color, foreground=self.current_theme["text"])
         self.style.configure("Title.TLabel", font=self.title_font, background=self.base_bg_color, foreground=self.current_theme["text"])
@@ -649,12 +625,19 @@ class MealRecommenderApp:
         button_frame = ttk.Frame(self.single_recipe_tab)
         button_frame.pack(fill=tk.X, pady=20)
         
-        # 検索ボタン
-        self.search_button = ttk.Button(
+        # 検索ボタン（標準tkinter.Buttonで色を明示的に指定）
+        self.search_button = tk.Button(
             button_frame,
             text="レシピを検索",
             command=self.search_recipes,
-            state="disabled"
+            state="disabled",
+            font=self.normal_font,
+            bg="#3498db",  # 青色背景
+            fg="white",    # 白色文字
+            relief="raised",
+            borderwidth=2,
+            padx=20,
+            pady=5
         )
         self.search_button.pack(side=tk.RIGHT)
         
@@ -700,8 +683,19 @@ class MealRecommenderApp:
         balance_check = ttk.Checkbutton(condition_frame, text="栄養バランスを考慮", variable=self.balance_var)
         balance_check.pack(side=tk.LEFT)
         
-        # 生成ボタン
-        generate_button = ttk.Button(settings_frame, text="献立プランを生成", command=self.generate_weekly_plan)
+        # 生成ボタン（標準tkinter.Buttonで色を明示的に指定）
+        generate_button = tk.Button(
+            settings_frame, 
+            text="献立プランを生成", 
+            command=self.generate_weekly_plan,
+            font=self.normal_font,
+            bg="#27ae60",  # 緑色背景
+            fg="white",    # 白色文字
+            relief="raised",
+            borderwidth=2,
+            padx=20,
+            pady=5
+        )
         generate_button.pack(pady=10)
         
         # 結果表示フレーム
@@ -1482,10 +1476,17 @@ class MealRecommenderApp:
         kitchen_mode_frame = ttk.Frame(steps_frame)
         kitchen_mode_frame.pack(fill=tk.X, pady=(0, 10))
         
-        kitchen_mode_button = ttk.Button(
+        kitchen_mode_button = tk.Button(
             kitchen_mode_frame,
             text="調理モードで開く",
-            command=lambda: self.open_kitchen_mode(recipe)
+            command=lambda: self.open_kitchen_mode(recipe),
+            font=self.normal_font,
+            bg="#e67e22",  # オレンジ背景
+            fg="white",    # 白色文字
+            relief="raised",
+            borderwidth=1,
+            padx=15,
+            pady=3
         )
         kitchen_mode_button.pack(side=tk.RIGHT)
         
@@ -1494,10 +1495,25 @@ class MealRecommenderApp:
             step_label = ttk.Label(steps_frame, text=step, font=self.normal_font, wraplength=600)
             step_label.pack(anchor=tk.W, pady=5)
         
-        # 栄養情報タブの内容
+        # 栄養情報タブの内容（栄養可視化機能は無効化）
         if "nutrition" in recipe:
-            nutrition_visualizer = NutritionVisualizer(nutrition_tab, recipe)
-            nutrition_visualizer.create_visualization(nutrition_tab)
+            # 栄養情報をテキストで表示
+            nutrition_info = recipe["nutrition"]
+            nutrition_text = f"カロリー: {nutrition_info.get('calories', 'N/A')} kcal\n"
+            nutrition_text += f"タンパク質: {nutrition_info.get('protein', 'N/A')} g\n"
+            nutrition_text += f"脂質: {nutrition_info.get('fat', 'N/A')} g\n"
+            nutrition_text += f"炭水化物: {nutrition_info.get('carbs', 'N/A')} g\n"
+            if 'vitamins' in nutrition_info:
+                nutrition_text += f"ビタミン: {', '.join(nutrition_info['vitamins'])}\n"
+            if 'minerals' in nutrition_info:
+                nutrition_text += f"ミネラル: {', '.join(nutrition_info['minerals'])}"
+            
+            ttk.Label(
+                nutrition_tab,
+                text=nutrition_text,
+                font=self.normal_font,
+                justify=tk.LEFT
+            ).pack(pady=20, padx=20, anchor=tk.W)
         else:
             ttk.Label(
                 nutrition_tab,
@@ -1513,25 +1529,46 @@ class MealRecommenderApp:
         nav_frame = ttk.Frame(recipe_display_frame)
         nav_frame.pack(fill=tk.X, pady=10)
         
-        self.prev_button = ttk.Button(
+        self.prev_button = tk.Button(
             nav_frame,
             text="前のレシピ",
-            command=self.show_prev_recipe
+            command=self.show_prev_recipe,
+            font=self.normal_font,
+            bg="#95a5a6",  # グレー背景
+            fg="white",    # 白色文字
+            relief="raised",
+            borderwidth=1,
+            padx=15,
+            pady=3
         )
         self.prev_button.pack(side=tk.LEFT)
         
-        self.next_button = ttk.Button(
+        self.next_button = tk.Button(
             nav_frame,
             text="次のレシピ",
-            command=self.show_next_recipe
+            command=self.show_next_recipe,
+            font=self.normal_font,
+            bg="#95a5a6",  # グレー背景
+            fg="white",    # 白色文字
+            relief="raised",
+            borderwidth=1,
+            padx=15,
+            pady=3
         )
         self.next_button.pack(side=tk.RIGHT)
         
         # 再検索ボタン
-        restart_button = ttk.Button(
+        restart_button = tk.Button(
             nav_frame,
             text="条件を変えて再検索",
-            command=self.restart_search
+            command=self.restart_search,
+            font=self.normal_font,
+            bg="#f39c12",  # オレンジ背景
+            fg="white",    # 白色文字
+            relief="raised",
+            borderwidth=1,
+            padx=15,
+            pady=3
         )
         restart_button.pack(side=tk.TOP, pady=(10, 0))
             
@@ -2038,15 +2075,26 @@ class MealRecommenderApp:
         nutrition_summary = get_nutrition_summary(self.weekly_meal_plan)
         
         if nutrition_summary:
-            # 栄養グラフを作成
-            fig = create_weekly_nutrition_chart(self.weekly_meal_plan)
+            # 栄養情報をテキストで表示（グラフ機能は無効化）
+            nutrition_text = "週間栄養情報:\n\n"
+            for day, summary in nutrition_summary.items():
+                nutrition_text += f"{day}:\n"
+                nutrition_text += f"  カロリー: {summary.get('calories', 'N/A')} kcal\n"
+                nutrition_text += f"  タンパク質: {summary.get('protein', 'N/A')} g\n"
+                nutrition_text += f"  脂質: {summary.get('fat', 'N/A')} g\n"
+                nutrition_text += f"  炭水化物: {summary.get('carbs', 'N/A')} g\n\n"
             
-            if fig:
-                from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-                
-                canvas = FigureCanvasTkAgg(fig, master=nutrition_frame)
-                canvas.draw()
-                canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+            nutrition_label = tk.Text(
+                nutrition_frame,
+                height=15,
+                font=self.normal_font,
+                wrap=tk.WORD,
+                state=tk.DISABLED
+            )
+            nutrition_label.config(state=tk.NORMAL)
+            nutrition_label.insert(tk.END, nutrition_text)
+            nutrition_label.config(state=tk.DISABLED)
+            nutrition_label.pack(fill=tk.BOTH, expand=True, pady=10)
         else:
             ttk.Label(
                 nutrition_frame,
@@ -2055,10 +2103,17 @@ class MealRecommenderApp:
             ).pack(pady=20)
         
         # 保存ボタン
-        save_button = ttk.Button(
+        save_button = tk.Button(
             self.weekly_result_frame,
             text="献立プランを保存",
-            command=self.save_weekly_plan
+            command=self.save_weekly_plan,
+            font=self.normal_font,
+            bg="#9b59b6",  # 紫色背景
+            fg="white",    # 白色文字
+            relief="raised",
+            borderwidth=1,
+            padx=15,
+            pady=5
         )
         save_button.pack(pady=10)
     
@@ -2114,10 +2169,25 @@ class MealRecommenderApp:
                 wraplength=500
             ).pack(anchor=tk.W, pady=5, padx=10)
         
-        # 栄養情報タブの内容
+        # 栄養情報タブの内容（栄養可視化機能は無効化）
         if "nutrition" in recipe:
-            nutrition_visualizer = NutritionVisualizer(nutrition_tab, recipe)
-            nutrition_visualizer.create_visualization(nutrition_tab)
+            # 栄養情報をテキストで表示
+            nutrition_info = recipe["nutrition"]
+            nutrition_text = f"カロリー: {nutrition_info.get('calories', 'N/A')} kcal\n"
+            nutrition_text += f"タンパク質: {nutrition_info.get('protein', 'N/A')} g\n"
+            nutrition_text += f"脂質: {nutrition_info.get('fat', 'N/A')} g\n"
+            nutrition_text += f"炭水化物: {nutrition_info.get('carbs', 'N/A')} g\n"
+            if 'vitamins' in nutrition_info:
+                nutrition_text += f"ビタミン: {', '.join(nutrition_info['vitamins'])}\n"
+            if 'minerals' in nutrition_info:
+                nutrition_text += f"ミネラル: {', '.join(nutrition_info['minerals'])}"
+            
+            ttk.Label(
+                nutrition_tab,
+                text=nutrition_text,
+                font=self.normal_font,
+                justify=tk.LEFT
+            ).pack(pady=20, padx=20, anchor=tk.W)
         else:
             ttk.Label(
                 nutrition_tab,
